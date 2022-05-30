@@ -52,16 +52,16 @@ static uint8_t amd_ibpi_ipmi_register[] = {
 	[IBPI_PATTERN_HOTSPARE] = 0x47,
 };
 
-#define MG9098_CHIP_ID_REG	0x63
+#define MG9100_CHIP_ID_REG	0x63
 
 #define AMD_IPMI_NETFN		0x06
 #define AMD_IPMI_CMD		0x52
 
 #define AMD_ETHANOL_X_CHANNEL	0x0d
-#define AMD_DAYTONA_X_CHANNEL	0x17
+#define AMD_DAYTONA_X_CHANNEL	(((28 & 0x7F) << 1) | 0x1)
 
-#define AMD_BASE_SLAVE_ADDR	0xc0
-#define AMD_NVME_SLAVE_ADDR	0xc4
+#define AMD_BASE_SLAVE_ADDR	(0x63 << 1)
+#define AMD_NVME_SLAVE_ADDR	(0x63 << 1)
 
 /* The path we are given should be similar to
  * /sys/devices/pci0000:e0/0000:e0:03.3/0000:e3:00.0
@@ -119,7 +119,8 @@ static int _get_ipmi_nvme_port(char *path)
 	 */
 	switch (amd_ipmi_platform) {
 	case AMD_PLATFORM_DAYTONA_X:
-		port -= 2;
+		port -= 19;	// CPU0 NVME links to ports 2 3
+		//port -= 17;	// CPU0 NVME links to ports 0 1
 		break;
 	case AMD_PLATFORM_ETHANOL_X:
 		port -= 7;
@@ -198,8 +199,9 @@ static int _get_amd_ipmi_drive(const char *start_path,
 		 * by the MG9098 chip.
 		 */
 		shift = drive->port - 1;
-		if (shift >= 8)
-			shift %= 8;
+		if (shift >= 4)
+			shift %= 4;
+		shift = 3 - shift;
 
 		drive->drive_bay = 1 << shift;
 		drive->dev = AMD_SATA_DEVICE;
@@ -381,7 +383,7 @@ int _amd_ipmi_em_enabled(const char *path)
 	cmd_data[0] = drive.channel;
 	cmd_data[1] = drive.slave_addr;
 	cmd_data[2] = 0x1;
-	cmd_data[3] = MG9098_CHIP_ID_REG;
+	cmd_data[3] = MG9100_CHIP_ID_REG;
 
 	status = 0;
 	rc = ipmicmd(BMC_SA, 0x0, AMD_IPMI_NETFN, AMD_IPMI_CMD, 4, &cmd_data,
@@ -393,7 +395,7 @@ int _amd_ipmi_em_enabled(const char *path)
 	}
 
 	/* Status return of 98 indicates MG9098 backplane */
-	if (status != 98) {
+	if (status != 0x8c) {
 		log_error("Platform does not have a MG9098 controller\n");
 		return 0;
 	}

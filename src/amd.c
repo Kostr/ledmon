@@ -117,7 +117,7 @@ int amd_em_enabled(const char *path)
 	if (!strncmp(platform, "ETHANOL_X", 9)) {
 		amd_interface = AMD_INTF_IPMI;
 		amd_ipmi_platform = AMD_PLATFORM_ETHANOL_X;
-	} else if (!strncmp(platform, "DAYTONA_X", 9)) {
+	} else if (!strncmp(platform, "Ethanol-X", 9)) {
 		amd_interface = AMD_INTF_IPMI;
 		amd_ipmi_platform = AMD_PLATFORM_DAYTONA_X;
 	}
