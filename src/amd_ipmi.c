@@ -119,8 +119,12 @@ static int _get_ipmi_nvme_port(char *path)
 	 */
 	switch (amd_ipmi_platform) {
 	case AMD_PLATFORM_DAYTONA_X:
-		port -= 19;	// CPU0 NVME links to ports 2 3
-		//port -= 17;	// CPU0 NVME links to ports 0 1
+		if ((port==20) || (port==21))  // CPU0 NVME links to ports 1 2 (61:00, 62:00)
+			port -= 19;
+		else if ((port==25) || (port==26)) // CPU1 NVME links to ports 3 4 (e1:00; e2:00)
+			port -= 22;
+		else
+			log_error("Invalid DaytonaX NVMe physical port %d\n", port);
 		break;
 	case AMD_PLATFORM_ETHANOL_X:
 		port -= 7;
